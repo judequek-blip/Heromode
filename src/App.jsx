@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Camera, Zap, Shield, Target, ArrowLeft, Download, Activity, Eye, Hand, Crosshair, Sparkles, Sun, CircleDot, Swords } from 'lucide-react';
 
+import { createGestureTrigger, GESTURE_HINTS } from './gestures';
+
 // --- CONFIGURATION & CONSTANTS ---
 const HEROES = {
   SUPERMAN: {
@@ -810,6 +812,7 @@ const ARScreen = ({ heroId, onBack }) => {
     let cancelled = false;
     let frame;
     let inFlight;
+    const detectGesture = createGestureTrigger();
     const video = videoRef.current;
     const stop = () => {
       cancelAnimationFrame(frame);
@@ -848,11 +851,15 @@ const ARScreen = ({ heroId, onBack }) => {
           if (cancelled || !canvasRef.current || !rendererRef.current) return;
           setIsReady(true);
           if (!results.poseLandmarks || !results.segmentationMask) {
+            detectGesture(heroId, null, performance.now());
             rendererRef.current.render(null, null, video, HEROES[heroId.toUpperCase()], powerStateRef.current);
             return;
           }
           
           const lm = results.poseLandmarks;
+
+          const gesture = detectGesture(heroId, lm, performance.now());
+          if (gesture) triggerPower(gesture.power, gesture.duration);
 
           // HERO-SPECIFIC GESTURE DETECTION (ISOLATED TO ACTIVE HERO)
           if (heroId === 'thor') {
@@ -1028,12 +1035,17 @@ const ARScreen = ({ heroId, onBack }) => {
              {heroId === 'wonderwoman' && <Sun className="w-96 h-96 text-yellow-400 animate-spin" style={{ animationDuration: '20s' }} strokeWidth={0.5} />}
           </div>
 
+          {GESTURE_HINTS[heroId] && (
+            <p className="text-center text-white text-sm bg-black/70 rounded-xl p-3 mx-auto max-w-lg mb-2">
+              {GESTURE_HINTS[heroId]} Hold briefly; keep shoulders and right arm visible.
+            </p>
+          )}
           {/* Controls */}
           <div className="w-full flex justify-center pointer-events-auto pb-4">
              <div className="bg-black/80 backdrop-blur-xl border border-white/10 p-4 rounded-3xl flex gap-6 overflow-x-auto shadow-2xl">
                 
                 {heroId === 'superman' && (
-                  <button onClick={() => triggerPower('heatVision', 1500)} className="flex flex-col items-center px-4 py-2 rounded-xl hover:bg-red-500/20 text-white transition-colors">
+                  <button aria-pressed={!!powerState.powers.heatVision} onClick={() => triggerPower('heatVision', 1500)} className="flex flex-col items-center px-4 py-2 rounded-xl hover:bg-red-500/20 text-white transition-colors">
                     <Eye className="w-8 h-8 mb-2 text-red-500 drop-shadow-[0_0_8px_rgba(255,0,0,0.8)]" />
                     <span className="text-xs font-bold font-mono">HEAT VISION</span>
                   </button>
@@ -1041,7 +1053,7 @@ const ARScreen = ({ heroId, onBack }) => {
                 
                 {heroId === 'ironman' && (
                   <>
-                    <button onClick={() => triggerPower('repulsor', 1000)} className="flex flex-col items-center px-4 py-2 rounded-xl hover:bg-cyan-500/20 text-white transition-colors">
+                    <button aria-pressed={!!powerState.powers.repulsor} onClick={() => triggerPower('repulsor', 1000)} className="flex flex-col items-center px-4 py-2 rounded-xl hover:bg-cyan-500/20 text-white transition-colors">
                       <Hand className="w-8 h-8 mb-2 text-cyan-400 drop-shadow-[0_0_8px_rgba(0,255,255,0.8)]" />
                       <span className="text-xs font-bold font-mono">REPULSOR</span>
                     </button>
@@ -1061,7 +1073,7 @@ const ARScreen = ({ heroId, onBack }) => {
 
                 {heroId === 'spiderman' && (
                   <>
-                    <button onClick={() => triggerPower('web', 500)} className="flex flex-col items-center px-4 py-2 rounded-xl hover:bg-white/20 text-white transition-colors">
+                    <button aria-pressed={!!powerState.powers.web} onClick={() => triggerPower('web', 500)} className="flex flex-col items-center px-4 py-2 rounded-xl hover:bg-white/20 text-white transition-colors">
                       <Target className="w-8 h-8 mb-2 text-white" />
                       <span className="text-xs font-bold font-mono">THWIP</span>
                     </button>
@@ -1133,6 +1145,7 @@ export default function HeroModeApp() {
         </p>
       </header>
 
+      <a href="./guide.html" className="relative z-10 text-center font-bold underline text-blue-900">Gesture and effects guide</a>
       <main className="flex-1 w-full max-w-7xl mx-auto p-6 relative z-10 flex items-center justify-center">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 w-full">
           {Object.values(HEROES).map((hero) => (

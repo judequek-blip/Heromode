@@ -1,74 +1,78 @@
 # Become a Superhero
 
-A React + Vite app migrated from the supplied Gemini TSX artifact. Tailwind preserves the original styling. Everything runs in the browser; no Gemini key, database, or backend is required. The original `become_a_superhero.tsx` is kept unchanged for reference; the running app is `src/App.jsx` (the source used JavaScript without TypeScript types).
+Choose Superman, Spider-Man, Thor, Iron Man, or Wonder Woman and activate camera effects with body poses or buttons. React, Vite, Tailwind, MediaPipe Pose, and a Canvas renderer run entirely in your browser. No API key or backend is needed.
 
-## Run locally
+## Quick start
 
-Use Node.js 22.12 or newer (Node 22 recommended).
+Use Node.js 22.12 or newer:
 
 ```sh
 npm ci
 npm run dev
 ```
 
-Open http://localhost:5173 and allow camera access. On Windows PowerShell, use `npm.cmd` if execution policy blocks `npm`.
+Open the localhost address and allow camera access. In PowerShell, use `npm.cmd` if execution policy blocks `npm`. Stand far enough back to show your head, shoulders, elbows, wrists, and hips. Use good lighting. Right and left mean **your own** right and left; the preview is mirrored.
+
+## Gestures and effects
+
+| Hero | Action detected | Visible effect | Button alternative |
+| --- | --- | --- | --- |
+| Superman | Hold your right hand beside your right eye for at least 0.25 seconds | Red heat-vision beams from both eyes, lasting 1.5 seconds | HEAT VISION |
+| Spider-Man | Extend your right arm sideways at shoulder height and hold for at least 0.25 seconds | White web from your right wrist toward the top center, lasting 0.5 seconds | THWIP |
+| Spider-Man | Button only | Toggle red mask | MASK ON / MASK OFF |
+| Thor | Raise your right wrist well above your nose (more than 20% of image height) | Lightning at the hammer/right hand, lasting 1 second and repeating while held | THUNDER (2 seconds) |
+| Iron Man | Raise your right wrist beside your shoulder, keeping your elbow below it; hold for at least 0.25 seconds | Cyan glow and upward repulsor beam from your right wrist, lasting 1 second | REPULSOR |
+| Iron Man | Button only | Toggle gold faceplate and glowing eyes | CLOSE HUD / OPEN HUD |
+| Wonder Woman | Bring wrists close together for 0.3-0.8 seconds | Bracelet deflection | BRACELETS |
+| Wonder Woman | Keep wrists together for more than 2 seconds | Amazonian power, lasting 6 seconds | AMAZONIAN POWER (5 seconds) |
+| Wonder Woman | Separate wrists after holding together for 0.8 to under 2 seconds | Shockwave, lasting 0.7 seconds | Gesture only |
+| Wonder Woman | Bring right wrist close to right hip | Lasso spin | LASSO triggers a lasso throw |
+| Wonder Woman | Raise left wrist above and near left shoulder | Shield defense while pose is held | SHIELD toggles persistent shield |
+
+The new Superman, Spider-Man, and Iron Man gestures repeat while held, with a short pause between bursts. Lower your arm to stop repeating. Buttons remain available. Wonder Woman's implementation and Thor's existing detection are unchanged.
+
+These are **body-pose gestures**, not finger recognition: the app does not recognize Spider-Man's finger sign, an open palm, eye movements, or a clenched fist. Flight, super strength, agility, spider-sense, and god mode on hero cards are descriptive abilities without separate implemented controls. Costumes, capes, armor, and Thor's hammer appear automatically. The download button saves the composited camera view as a PNG; Back releases the camera.
+
+## Why the other gestures did not work
+
+The original app only connected automatic detection to Thor and Wonder Woman. Superman's heat vision, Spider-Man's web, and Iron Man's repulsor were button-triggered effects with no corresponding detection branches. `src/gestures.js` now supplies those missing triggers. Thresholds scale with shoulder width, require visible landmarks, and require a 250 ms hold. Tracking loss resets the hold. Existing effect rendering is reused.
+
+## GitHub Pages
+
+The included `.github/workflows/pages.yml` builds, tests, and deploys `dist` on pushes to `main`, or through a manual workflow run. Relative asset paths in `vite.config.js` allow the site to run under `/Heromode/`.
+
+1. Commit and push these project changes to `judequek-blip/Heromode` on `main`.
+2. In the repository, open **Settings > Pages > Build and deployment**, and choose **GitHub Actions** as the source.
+3. Open **Actions > Deploy GitHub Pages** and run the workflow if needed. Wait for a successful deployment.
+4. Visit https://judequek-blip.github.io/Heromode/ and allow camera access.
+
+This address is the expected deployment URL, not confirmation that deployment has already occurred. GitHub Pages supplies HTTPS, which is required for camera access outside localhost. Do not select branch-based publishing of the unbuilt source.
+
+Deployment references: [Vite static deployment](https://vite.dev/guide/static-deploy/) and [GitHub Pages publishing source](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site).
+
+The existing `render.yaml` also supports Render: build with `npm ci && npm run build` and publish `dist`.
+
+## Troubleshooting and privacy
+
+- **No camera:** allow permission, close applications using the camera, and use HTTPS or localhost.
+- **Costume visible but no power:** use the gesture for the selected hero; keep the right arm and shoulders in view. Try the power button to distinguish gesture recognition from rendering.
+- **Gesture unreliable:** improve lighting, face the camera, avoid covering joints, and hold the pose briefly. These heuristics need real-camera testing across body sizes and camera angles.
+- **Tracking download fails:** check your internet connection and whether jsDelivr is blocked. MediaPipe's pinned script, models, and WASM are downloaded from that CDN.
+- **Blank deployed site:** check the Pages workflow result and verify that it published `dist`.
+
+The app processes camera frames locally and does not upload them. Downloaded photos are saved only when requested. Model downloads still contact the CDN.
+
+## Development and verification
+
+`src/App.jsx` contains selection, camera lifecycle, the renderer, and original Thor/Wonder Woman gestures. `src/gestures.js` contains the new gesture detection. `become_a_superhero.tsx` remains the original reference artifact and is not the running app.
 
 ```sh
 npm run build
+npx playwright install chromium
+npm test
 npm run preview
 ```
 
-## Features retained
+Tests use a simulated camera and deterministic landmarks, so they verify software behavior rather than real tracking accuracy. Before sharing, test every gesture with a real webcam, test button fallbacks, capture a photo, and confirm Back turns off the camera indicator.
 
-- Five heroes: Superman, Spider-Man, Thor, Iron Man, and Wonder Woman.
-- Mirrored live camera, MediaPipe pose tracking and person segmentation, procedural costume textures, depth sorting, lighting, capes, armor, and effects.
-- Superman heat vision; Spider-Man webs and mask toggle; Thor lightning and hammer; Iron Man repulsors, helmet toggle, and HUD.
-- Wonder Woman transformation banner, lasso, bracelets, shield, Amazonian power, and shockwave.
-- Thor: raise the right wrist above the head to activate lightning.
-- Wonder Woman: bring wrists together for bracelets, hold over two seconds for Amazonian power, or separate after 0.8–2 seconds for shockwave. Bring the right wrist toward the hip for lasso spin; raise the left wrist near the shoulder for shield defense.
-- Download the composited camera image as a PNG; return to hero selection and release the camera.
-
-Some powers on the original hero cards (such as flight, strength, agility, and spider-sense) were descriptive labels, not implemented controls. This migration retains that behavior.
-
-Camera frames are processed locally and are not uploaded by this app. The pinned MediaPipe script, model, and WASM files download from jsDelivr, so tracking needs internet access. Camera access requires HTTPS (provided by Render) or localhost. Stand far enough back to show your shoulders, hips, and wrists. Tracking quality depends on lighting, framing, and device performance.
-
-## Publish to GitHub
-
-1. Sign in at https://github.com/new and create an empty repository named `become-a-superhero`. Choose your preferred visibility; do not initialize it with a README, license, or gitignore.
-2. From this project folder, run these commands if not already done:
-
-```sh
-git init -b main
-git add .
-git commit -m "Build standalone superhero AR app"
-git remote add origin https://github.com/YOUR_USERNAME/become-a-superhero.git
-git push -u origin main
-```
-
-Git may open your browser for authentication. Never put a GitHub token in source files. If `origin` already exists, inspect it with `git remote -v` before changing it. If Git asks for identity, configure your name and GitHub email before committing.
-
-## Deploy on Render
-
-1. Sign in at https://dashboard.render.com and choose **New → Static Site**.
-2. Connect GitHub and select your repository.
-3. Select branch `main`, leave Root Directory empty, and enter:
-
-| Setting | Value |
-| --- | --- |
-| Build Command | `npm ci && npm run build` |
-| Publish Directory | `dist` |
-
-4. Click **Create Static Site**. Open the assigned HTTPS `onrender.com` URL and allow the camera.
-
-Alternatively, choose **New → Blueprint** and connect the repository to use the included `render.yaml`, including its response headers. No environment secrets are needed. Later pushes to the connected branch can automatically redeploy the site.
-
-References: https://vite.dev/guide/static-deploy/ and https://render.com/docs/static-sites.
-
-## Verification
-
-```sh
-npx playwright install chromium
-npm test
-```
-
-Browser tests use a simulated camera and a deterministic tracking fixture to exercise all five hero flows, controls, capture, denied camera access, cleanup, and tracking failures. They do not measure real camera tracking accuracy. Before sharing the deployed site, test each hero with a real webcam, verify gestures, download a photo, and return to selection to check that the camera indicator turns off.
+A browser-friendly gesture guide is included at '/Heromode/guide.html' and linked from hero selection.

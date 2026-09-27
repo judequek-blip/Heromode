@@ -12,7 +12,7 @@ async function trackingFixture(page) {
         const poseLandmarks = Array.from({length: 33}, (_, i) => ({x: 0.35 + (i % 2) * 0.3, y: 0.25 + Math.floor(i / 2) * 0.025, z: 0, visibility: 1}));
         const mask = document.createElement('canvas'); mask.width = 640; mask.height = 480;
         const ctx = mask.getContext('2d'); ctx.fillStyle = 'white'; ctx.fillRect(0, 0, 640, 480);
-        this.callback({poseLandmarks: window.testNoPerson ? null : poseLandmarks, segmentationMask: mask});
+        this.callback({poseLandmarks: window.testNoPerson ? null : (window.testPose || poseLandmarks), segmentationMask: mask});
       }
       async close() {}
     }`,
@@ -100,3 +100,30 @@ test('leaving during camera permission request stops a late stream', async ({ pa
   await page.evaluate(() => window.resolveCamera());
   await expect.poll(() => page.evaluate(() => window.testLateStream.getTracks().every(track => track.readyState === 'ended'))).toBe(true);
 });
+
+const gestureCases = [
+  ['SUPERMAN', 'HEAT VISION', { x: 0.59, y: 0.22 }],
+  ['SPIDER-MAN', 'THWIP', { x: 0.95, y: 0.4 }],
+  ['IRON MAN', 'REPULSOR', { x: 0.72, y: 0.3 }],
+];
+for (const [hero, button, wrist] of gestureCases) {
+  test(`${hero}: gesture activates power and tracking loss lets it expire`, async ({ page }) => {
+    await trackingFixture(page);
+    await page.goto('/');
+    await page.getByRole('button', { name: `Select ${hero}`, exact: true }).click();
+    const power = page.getByRole('button', { name: button, exact: true });
+    await expect(power).toHaveAttribute('aria-pressed', 'false');
+    await page.evaluate(wrist => {
+      const lm = Array.from({ length: 33 }, () => ({ x: 0.5, y: 0.7, z: 0, visibility: 1 }));
+      Object.assign(lm[11], { x: 0.35, y: 0.4 });
+      Object.assign(lm[12], { x: 0.65, y: 0.4 });
+      Object.assign(lm[14], { x: 0.8, y: 0.5 });
+      Object.assign(lm[5], { x: 0.56, y: 0.22 });
+      Object.assign(lm[16], wrist);
+      window.testPose = lm;
+    }, wrist);
+    await expect(power).toHaveAttribute('aria-pressed', 'true');
+    await page.evaluate(() => { window.testNoPerson = true; });
+    await expect(power).toHaveAttribute('aria-pressed', 'false');
+  });
+}
