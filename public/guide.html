@@ -4,10 +4,13 @@
 <a href="./">Back to hero selection</a><h1>Discover your superpowers</h1>
 <p>Choose a hero, allow camera access, and keep your head, shoulders, elbows, wrists, and hips visible. Right and left mean your own right and left; the camera preview is mirrored.</p>
 <h2>Gestures and effects</h2><div class="table"><table aria-label="Hero gestures and button controls"><tr><td>Hero</td><td>Action detected</td><td>Visible effect</td><td>Button alternative</td></tr>
+<tr><td>Superman</td><td>Raise your right hand high above your head for at least 0.25 seconds</td><td>Moving sky, clouds, and speed streaks behind your silhouette for 4 seconds</td><td>FLIGHT</td></tr>
 <tr><td>Superman</td><td>Hold your right hand beside your right eye for at least 0.25 seconds</td><td>Red heat-vision beams from both eyes, lasting 1.5 seconds</td><td>HEAT VISION</td></tr>
 <tr><td>Spider-Man</td><td>Extend your right arm sideways at shoulder height and hold for at least 0.25 seconds</td><td>White web from your right wrist toward the top center, lasting 0.5 seconds</td><td>THWIP</td></tr>
-<tr><td>Spider-Man</td><td>Button only</td><td>Toggle red mask</td><td>MASK ON / MASK OFF</td></tr>
+<tr><td>Spider-Man</td><td>Button only</td><td>Toggle a rounded red webbed mask with white lenses, aligned to your eyes</td><td>MASK ON / MASK OFF</td></tr>
+<tr><td>Thor</td><td>Extend your right arm sideways at shoulder height for at least 0.25 seconds</td><td>Summon a metallic hammer that follows your right wrist for 4 seconds</td><td>SUMMON HAMMER</td></tr>
 <tr><td>Thor</td><td>Raise your right wrist well above your nose (more than 20% of image height)</td><td>Lightning at the hammer/right hand, lasting 1 second and repeating while held</td><td>THUNDER (2 seconds)</td></tr>
+<tr><td>Iron Man</td><td>Hold both hands above chest level for at least 0.25 seconds</td><td>White/cyan chest beam from the arc reactor toward the bottom of the screen for 1.8 seconds. Repeats while held; takes priority over the repulsor gesture.</td><td>CHEST BEAM</td></tr>
 <tr><td>Iron Man</td><td>Raise your right wrist beside your shoulder, keeping your elbow below it; hold for at least 0.25 seconds</td><td>Cyan glow and upward repulsor beam from your right wrist, lasting 1 second</td><td>REPULSOR</td></tr>
 <tr><td>Iron Man</td><td>Button only</td><td>Toggle gold faceplate and glowing eyes</td><td>CLOSE HUD / OPEN HUD</td></tr>
 <tr><td>Wonder Woman</td><td>Bring wrists close together for 0.3-0.8 seconds</td><td>Bracelet deflection</td><td>BRACELETS</td></tr>
@@ -16,8 +19,8 @@
 <tr><td>Wonder Woman</td><td>Bring right wrist close to right hip</td><td>Lasso spin</td><td>LASSO triggers a lasso throw</td></tr>
 <tr><td>Wonder Woman</td><td>Raise left wrist above and near left shoulder</td><td>Shield defense while pose is held</td><td>SHIELD toggles persistent shield</td></tr></table></div>
 <h2>Make tracking work</h2><p>Face the camera in good lighting. Hold the Superman, Spider-Man, and Iron Man poses for at least a quarter of a second. Their effects repeat while held; lower your arm to stop. If a pose is not recognized, try the corresponding button.</p>
-<p>This app detects body positions, not finger signs, open palms, fists, or eye movements. Masks and the Iron Man faceplate use buttons. Flight, strength, agility, spider-sense, and god mode are descriptive labels without separate controls.</p>
-<h2>Photos and privacy</h2><p>Download saves a PNG of your camera view with effects. Back releases the camera. Frames are processed in your browser and are not uploaded by the app. Internet access is needed to download the tracking model from jsDelivr. Camera access requires HTTPS or localhost.</p>
+<p>This app detects body positions, not finger signs, open palms, fists, or eye movements. Masks and the Iron Man faceplate use buttons. Iron Man flight, strength, agility, spider-sense, and god mode are descriptive labels without separate controls.</p>
+<p>Superman flight replaces the background with a moving sky behind your silhouette for four seconds. Thor summons a hammer for four seconds; it follows your right hand and also appears during lightning. Hold their poses to repeat.</p><h2>Photos and privacy</h2><p>Download saves a PNG of your camera view with effects. Back releases the camera. Frames are processed in your browser and are not uploaded by the app. Internet access is needed to download the tracking model from jsDelivr. Camera access requires HTTPS or localhost.</p>
 <h2>Need help?</h2><p>Allow camera permission and close other apps using your webcam. If tracking fails to load, check your connection. Keep joints visible and try the power buttons to distinguish gesture recognition from rendering.</p>
 <p><a href="https://github.com/judequek-blip/Heromode#readme">Project documentation and setup</a></p>
 </main></body></html>

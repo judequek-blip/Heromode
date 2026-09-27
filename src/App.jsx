@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Camera, Zap, Shield, Target, ArrowLeft, Download, Activity, Eye, Hand, Crosshair, Sparkles, Sun, CircleDot, Swords } from 'lucide-react';
 
+import { drawSpiderMask, drawFlightSky, drawHammer, drawChestBeam } from './heroEffects';
 import { createGestureTrigger, GESTURE_HINTS } from './gestures';
 
 // --- CONFIGURATION & CONSTANTS ---
@@ -37,7 +38,7 @@ const HEROES = {
     name: 'IRON MAN',
     color: '#b30000',
     accent: '#e6b800',
-    powers: ['REPULSOR', 'FLIGHT', 'JARVIS HUD'],
+    powers: ['REPULSOR', 'CHEST BEAM', 'JARVIS HUD'],
     description: 'Genius, billionaire, armored avenger.',
     tagline: 'I am Iron Man'
   },
@@ -196,6 +197,7 @@ class Renderer {
     return { 
       x: (1 - lm.x) * this.w, // Flip X mathematically instead of CSS/Ctx transform to preserve lighting logic
       y: lm.y * this.h, 
+      visibility: lm.visibility,
       z: lm.z * this.w // scale Z relative to width for depth sorting
     };
   }
@@ -291,6 +293,10 @@ class Renderer {
 
     // Parse specific hero geometry
     this.parseHeroGeometry(lm, heroConfig.id, state);
+
+    if (heroConfig.id === 'superman' && state.powers.flight) {
+      drawFlightSky(mainCtx, this.w, this.h, performance.now());
+    }
 
     // Wonder Woman Atmospheric Power Overlay
     if (heroConfig.id === 'wonderwoman' && state.powers.amazonianPower) {
@@ -401,15 +407,7 @@ class Renderer {
       this.queueSegment(this.skinTightQueue, centerTorso, 'fabric', '#aa0000', null);
 
       if (state.helmetActive) {
-         // Head polygon (oversized slightly, segmentation will clip it perfectly)
-         const headW = sDist * 0.8;
-         const head = [
-           {x: lm[0].x - headW/2, y: lm[0].y - headW, z: lm[0].z},
-           {x: lm[0].x + headW/2, y: lm[0].y - headW, z: lm[0].z},
-           {x: lm[0].x + headW/2, y: lm[0].y + headW/2, z: lm[0].z},
-           {x: lm[0].x - headW/2, y: lm[0].y + headW/2, z: lm[0].z}
-         ];
-         this.queueSegment(this.skinTightQueue, head, 'fabric', '#aa0000', null);
+         this.effectsQueue.push(ctx => drawSpiderMask(ctx, lm, sDist));
       }
 
       if (state.powers.web) {
@@ -495,7 +493,11 @@ class Renderer {
          });
       }
 
-      if (state.powers.repulsor) {
+      if (state.powers.chestBeam) {
+        this.effectsQueue.push(ctx => drawChestBeam(ctx, { x: cX, y: cY }, sDist, this.w, this.h, performance.now()));
+      }
+
+      if (state.powers.repulsor && !state.powers.chestBeam) {
          this.effectsQueue.push((ctx) => {
             this.drawGlow(ctx, lm[16], 40 + Math.random()*20, '#00ffff', '#fff');
             ctx.beginPath(); ctx.moveTo(lm[16].x, lm[16].y); ctx.lineTo(lm[16].x, 0);
@@ -536,6 +538,10 @@ class Renderer {
             ctx.strokeStyle = '#999'; ctx.lineWidth = 3; ctx.stroke();
          });
       });
+
+      if (state.powers.hammer || state.powers.lightning) {
+        this.effectsQueue.push(ctx => drawHammer(ctx, lm, sDist, performance.now()));
+      }
 
       if (state.powers.lightning) {
          this.effectsQueue.push((ctx) => {
@@ -1045,10 +1051,16 @@ const ARScreen = ({ heroId, onBack }) => {
              <div className="bg-black/80 backdrop-blur-xl border border-white/10 p-4 rounded-3xl flex gap-6 overflow-x-auto shadow-2xl">
                 
                 {heroId === 'superman' && (
+                  <>
                   <button aria-pressed={!!powerState.powers.heatVision} onClick={() => triggerPower('heatVision', 1500)} className="flex flex-col items-center px-4 py-2 rounded-xl hover:bg-red-500/20 text-white transition-colors">
                     <Eye className="w-8 h-8 mb-2 text-red-500 drop-shadow-[0_0_8px_rgba(255,0,0,0.8)]" />
                     <span className="text-xs font-bold font-mono">HEAT VISION</span>
                   </button>
+                  <button aria-pressed={!!powerState.powers.flight} onClick={() => triggerPower('flight', 4000)} className="flex flex-col items-center px-4 py-2 rounded-xl hover:bg-blue-500/20 text-white transition-colors">
+                    <ArrowLeft className="w-8 h-8 mb-2 rotate-90 text-blue-300" />
+                    <span className="text-xs font-bold font-mono">FLIGHT</span>
+                  </button>
+                  </>
                 )}
                 
                 {heroId === 'ironman' && (
@@ -1056,6 +1068,10 @@ const ARScreen = ({ heroId, onBack }) => {
                     <button aria-pressed={!!powerState.powers.repulsor} onClick={() => triggerPower('repulsor', 1000)} className="flex flex-col items-center px-4 py-2 rounded-xl hover:bg-cyan-500/20 text-white transition-colors">
                       <Hand className="w-8 h-8 mb-2 text-cyan-400 drop-shadow-[0_0_8px_rgba(0,255,255,0.8)]" />
                       <span className="text-xs font-bold font-mono">REPULSOR</span>
+                    </button>
+                    <button aria-pressed={!!powerState.powers.chestBeam} onClick={() => triggerPower('chestBeam', 1800)} className="flex flex-col items-center px-4 py-2 rounded-xl hover:bg-cyan-500/20 text-white transition-colors">
+                      <CircleDot className="w-8 h-8 mb-2 text-cyan-200" />
+                      <span className="text-xs font-bold font-mono">CHEST BEAM</span>
                     </button>
                     <button onClick={toggleHelmet} className="flex flex-col items-center px-4 py-2 rounded-xl hover:bg-yellow-500/20 text-white transition-colors">
                       <Shield className="w-8 h-8 mb-2 text-yellow-400" />
@@ -1065,10 +1081,16 @@ const ARScreen = ({ heroId, onBack }) => {
                 )}
 
                 {heroId === 'thor' && (
+                  <>
                   <button onClick={() => triggerPower('lightning', 2000)} className="flex flex-col items-center px-4 py-2 rounded-xl hover:bg-blue-500/20 text-white transition-colors">
                     <Zap className="w-8 h-8 mb-2 text-blue-300 fill-blue-300 drop-shadow-[0_0_10px_rgba(0,100,255,0.8)]" />
                     <span className="text-xs font-bold font-mono">THUNDER</span>
                   </button>
+                  <button aria-pressed={!!powerState.powers.hammer} onClick={() => triggerPower('hammer', 4000)} className="flex flex-col items-center px-4 py-2 rounded-xl hover:bg-blue-500/20 text-white transition-colors">
+                    <Zap className="w-8 h-8 mb-2 text-blue-200" />
+                    <span className="text-xs font-bold font-mono">SUMMON HAMMER</span>
+                  </button>
+                  </>
                 )}
 
                 {heroId === 'spiderman' && (

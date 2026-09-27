@@ -20,10 +20,10 @@ async function trackingFixture(page) {
 }
 
 const heroes = [
-  ['SUPERMAN', ['HEAT VISION']],
+  ['SUPERMAN', ['HEAT VISION', 'FLIGHT']],
   ['SPIDER-MAN', ['THWIP', 'MASK ON']],
-  ['THOR', ['THUNDER']],
-  ['IRON MAN', ['REPULSOR', 'CLOSE HUD']],
+  ['THOR', ['THUNDER', 'SUMMON HAMMER']],
+  ['IRON MAN', ['REPULSOR', 'CHEST BEAM', 'CLOSE HUD']],
   ['WONDER WOMAN', ['LASSO', 'BRACELETS', 'SHIELD', 'AMAZONIAN POWER']],
 ];
 
@@ -102,12 +102,15 @@ test('leaving during camera permission request stops a late stream', async ({ pa
 });
 
 const gestureCases = [
+  ['IRON MAN', 'CHEST BEAM', { x: 0.72, y: 0.42, both: true }],
+  ['SUPERMAN', 'FLIGHT', { x: 0.65, y: 0.01 }],
+  ['THOR', 'SUMMON HAMMER', { x: 0.95, y: 0.4 }],
   ['SUPERMAN', 'HEAT VISION', { x: 0.59, y: 0.22 }],
   ['SPIDER-MAN', 'THWIP', { x: 0.95, y: 0.4 }],
   ['IRON MAN', 'REPULSOR', { x: 0.72, y: 0.3 }],
 ];
 for (const [hero, button, wrist] of gestureCases) {
-  test(`${hero}: gesture activates power and tracking loss lets it expire`, async ({ page }) => {
+  test(`${hero} ${button}: gesture activates power and tracking loss lets it expire`, async ({ page }) => {
     await trackingFixture(page);
     await page.goto('/');
     await page.getByRole('button', { name: `Select ${hero}`, exact: true }).click();
@@ -120,6 +123,7 @@ for (const [hero, button, wrist] of gestureCases) {
       Object.assign(lm[14], { x: 0.8, y: 0.5 });
       Object.assign(lm[5], { x: 0.56, y: 0.22 });
       Object.assign(lm[16], wrist);
+      if (wrist.both) Object.assign(lm[15], { x: 0.3, y: 0.42 });
       window.testPose = lm;
     }, wrist);
     await expect(power).toHaveAttribute('aria-pressed', 'true');
