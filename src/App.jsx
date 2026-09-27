@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Camera, Zap, Shield, Target, ArrowLeft, Download, Activity, Eye, Hand, Crosshair, Sparkles, Sun, CircleDot, Swords } from 'lucide-react';
 
-import { drawSpiderMask, drawFlightSky, drawHammer, drawChestBeam } from './heroEffects';
-import { createGestureTrigger, GESTURE_HINTS } from './gestures';
+import { drawSpiderMask, drawFlightSky, drawHammer, drawChestBeam, drawSwingCity, drawSpiderWebs } from './heroEffects';
+import { createGestureTrigger, createSpiderGestureTracker, GESTURE_HINTS } from './gestures';
 
 // --- CONFIGURATION & CONSTANTS ---
 const HEROES = {
@@ -298,6 +298,10 @@ class Renderer {
       drawFlightSky(mainCtx, this.w, this.h, performance.now());
     }
 
+    if (heroConfig.id === 'spiderman' && (state.spiderGesture?.swing || state.powers.swing)) {
+      drawSwingCity(mainCtx, this.w, this.h, performance.now());
+    }
+
     // Wonder Woman Atmospheric Power Overlay
     if (heroConfig.id === 'wonderwoman' && state.powers.amazonianPower) {
       mainCtx.save();
@@ -410,14 +414,14 @@ class Renderer {
          this.effectsQueue.push(ctx => drawSpiderMask(ctx, lm, sDist));
       }
 
-      if (state.powers.web) {
-         this.effectsQueue.push((ctx) => {
-           ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
-           ctx.beginPath(); ctx.moveTo(lm[16].x, lm[16].y); ctx.lineTo(this.w/2, 0); ctx.stroke();
-         });
-      }
+      const spider = {
+        left: state.spiderGesture?.left || state.powers.webLeft || state.powers.screenWeb,
+        right: state.spiderGesture?.right || state.powers.web || state.powers.screenWeb,
+        swing: state.spiderGesture?.swing || state.powers.swing,
+        screen: state.spiderGesture?.screen || state.powers.screenWeb,
+      };
+      this.effectsQueue.push(ctx => drawSpiderWebs(ctx, lm, this.w, this.h, spider, performance.now()));
     }
-
     else if (heroId === 'superman') {
       // Background Cape
       const cape = [
@@ -819,6 +823,7 @@ const ARScreen = ({ heroId, onBack }) => {
     let frame;
     let inFlight;
     const detectGesture = createGestureTrigger();
+    const trackSpider = createSpiderGestureTracker();
     const video = videoRef.current;
     const stop = () => {
       cancelAnimationFrame(frame);
@@ -856,6 +861,11 @@ const ARScreen = ({ heroId, onBack }) => {
         pose.onResults((results) => {
           if (cancelled || !canvasRef.current || !rendererRef.current) return;
           setIsReady(true);
+          if (heroId === 'spiderman') {
+            const spiderGesture = trackSpider(results.segmentationMask ? results.poseLandmarks : null, performance.now());
+            setPowerState(prev => Object.keys(spiderGesture).every(key => prev.spiderGesture?.[key] === spiderGesture[key])
+              ? prev : { ...prev, spiderGesture });
+          }
           if (!results.poseLandmarks || !results.segmentationMask) {
             detectGesture(heroId, null, performance.now());
             rendererRef.current.render(null, null, video, HEROES[heroId.toUpperCase()], powerStateRef.current);
@@ -864,7 +874,7 @@ const ARScreen = ({ heroId, onBack }) => {
           
           const lm = results.poseLandmarks;
 
-          const gesture = detectGesture(heroId, lm, performance.now());
+          const gesture = heroId === 'spiderman' ? null : detectGesture(heroId, lm, performance.now());
           if (gesture) triggerPower(gesture.power, gesture.duration);
 
           // HERO-SPECIFIC GESTURE DETECTION (ISOLATED TO ACTIVE HERO)
@@ -1095,9 +1105,18 @@ const ARScreen = ({ heroId, onBack }) => {
 
                 {heroId === 'spiderman' && (
                   <>
-                    <button aria-pressed={!!powerState.powers.web} onClick={() => triggerPower('web', 500)} className="flex flex-col items-center px-4 py-2 rounded-xl hover:bg-white/20 text-white transition-colors">
+                    <button aria-pressed={!!(powerState.powers.web || powerState.spiderGesture?.right || powerState.powers.screenWeb)} onClick={() => triggerPower('web', 500)} className="flex flex-col items-center px-4 py-2 rounded-xl hover:bg-white/20 text-white transition-colors">
                       <Target className="w-8 h-8 mb-2 text-white" />
                       <span className="text-xs font-bold font-mono">THWIP</span>
+                    </button>
+                    <button aria-pressed={!!(powerState.powers.webLeft || powerState.spiderGesture?.left || powerState.powers.screenWeb)} onClick={() => triggerPower('webLeft', 500)} className="flex flex-col items-center px-4 py-2 rounded-xl hover:bg-white/20 text-white">
+                      <Hand className="w-8 h-8 mb-2" /><span className="text-xs font-bold font-mono">LEFT WEB</span>
+                    </button>
+                    <button aria-pressed={!!(powerState.powers.screenWeb || powerState.spiderGesture?.screen)} onClick={() => triggerPower('screenWeb', 1800)} className="flex flex-col items-center px-4 py-2 rounded-xl hover:bg-white/20 text-white">
+                      <Target className="w-8 h-8 mb-2" /><span className="text-xs font-bold font-mono">WEB SCREEN</span>
+                    </button>
+                    <button aria-pressed={!!(powerState.powers.swing || powerState.spiderGesture?.swing)} onClick={() => triggerPower('swing', 4000)} className="flex flex-col items-center px-4 py-2 rounded-xl hover:bg-white/20 text-white">
+                      <Activity className="w-8 h-8 mb-2" /><span className="text-xs font-bold font-mono">SWING</span>
                     </button>
                      <button onClick={toggleHelmet} className="flex flex-col items-center px-4 py-2 rounded-xl hover:bg-red-500/20 text-white transition-colors">
                       <Eye className="w-8 h-8 mb-2 text-red-500" />

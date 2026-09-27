@@ -19,7 +19,9 @@ Open the localhost address and allow camera access. In PowerShell, use `npm.cmd`
 | --- | --- | --- | --- |
 | Superman | Raise your right hand high above your head for at least 0.25 seconds | Moving sky, clouds, and speed streaks behind your silhouette for 4 seconds | FLIGHT |
 | Superman | Hold your right hand beside your right eye for at least 0.25 seconds | Red heat-vision beams from both eyes, lasting 1.5 seconds | HEAT VISION |
-| Spider-Man | Extend your right arm sideways at shoulder height and hold for at least 0.25 seconds | White web from your right wrist toward the top center, lasting 0.5 seconds | THWIP |
+| Spider-Man | Extend either arm sideways at shoulder height for 0.25 seconds | Web strands from the matching wrist to an overhead anchor while held | THWIP (right) / LEFT WEB (0.5 seconds) |
+| Spider-Man | Keep either arm in the shooting pose continuously for 2 seconds | Animated city with moving buildings and a bobbing horizon behind your silhouette, simulating swinging | SWING (4 seconds) |
+| Spider-Man | Extend both arms in the shooting pose | Webs from both wrists plus a web covering the screen | WEB SCREEN (1.8 seconds) |
 | Spider-Man | Button only | Toggle a rounded red webbed mask with white lenses, aligned to your eyes | MASK ON / MASK OFF |
 | Thor | Extend your right arm sideways at shoulder height for at least 0.25 seconds | Summon a metallic hammer that follows your right wrist for 4 seconds | SUMMON HAMMER |
 | Thor | Raise your right wrist well above your nose (more than 20% of image height) | Lightning at the hammer/right hand, lasting 1 second and repeating while held | THUNDER (2 seconds) |
@@ -32,7 +34,7 @@ Open the localhost address and allow camera access. In PowerShell, use `npm.cmd`
 | Wonder Woman | Bring right wrist close to right hip | Lasso spin | LASSO triggers a lasso throw |
 | Wonder Woman | Raise left wrist above and near left shoulder | Shield defense while pose is held | SHIELD toggles persistent shield |
 
-The new Superman, Spider-Man, and Iron Man gestures repeat while held, with a short pause between bursts. Lower your arm to stop repeating. Buttons remain available. Wonder Woman's implementation and Thor's existing lightning detection are unchanged. Flight is a visual camera effect, with your silhouette composited over an animated sky. Thor also displays the hammer during lightning.
+Spider-Man webs remain active while held; swinging begins after a continuous two-second hold on either arm. Lower both arms or lose tracking to clear the gesture effects. Both hands can web the screen while swinging. The Superman, Thor, and Iron Man timed gestures repeat while held, with a short pause between bursts. Lower your arm to stop repeating. Buttons remain available. Wonder Woman's implementation and Thor's existing lightning detection are unchanged. Flight is a visual camera effect, with your silhouette composited over an animated sky. Thor also displays the hammer during lightning.
 
 These are **body-pose gestures**, not finger recognition: the app does not recognize Spider-Man's finger sign, an open palm, eye movements, or a clenched fist. Iron Man flight, super strength, agility, spider-sense, and god mode on hero cards are descriptive abilities without separate implemented controls. Costumes, capes, and armor appear automatically. Thor summons his hammer with the gesture or button. The download button saves the composited camera view as a PNG; Back releases the camera.
 

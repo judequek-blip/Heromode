@@ -41,3 +41,22 @@ test('chest beam draws a bright reactor and a projected beam', async ({ page }) 
   expect(pixels.outside).toBe(0);
   expect(pixels.restored).toBe(true);
 });
+
+test('Spider-Man city and screen web render visibly', async ({ page }) => {
+  await page.goto('/');
+  const changes = await page.evaluate(async () => {
+    const { drawSwingCity, drawSpiderWebs } = await import('/src/heroEffects.js');
+    const c = document.createElement('canvas'); c.width = 640; c.height = 480;
+    document.body.replaceChildren(c);
+    const ctx = c.getContext('2d');
+    drawSwingCity(ctx, 640, 480, 2000);
+    const before = ctx.getImageData(0, 0, 640, 480).data;
+    const lm = Array.from({length: 33}, () => ({x: 320, y: 240, visibility: 1}));
+    lm[15].x = 540; lm[16].x = 100;
+    drawSpiderWebs(ctx, lm, 640, 480, {left: true, right: true, screen: true, swing: true}, 2000);
+    const after = ctx.getImageData(0, 0, 640, 480).data;
+    return after.reduce((sum, value, i) => sum + (value !== before[i] ? 1 : 0), 0);
+  });
+  expect(changes).toBeGreaterThan(10000);
+  await page.screenshot({path: 'test-results/spider-city.png'});
+});

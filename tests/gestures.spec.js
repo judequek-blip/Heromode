@@ -62,3 +62,23 @@ test('chest beam requires both visible wrists above chest and wins over repulsor
   lm[15].y = 0.42; lm[16].y = 0.55;
   expect(detectPower('ironman', lm)).toBeNull();
 });
+
+test('Spider-Man tracks both arms, requires a continuous two-second hold, and resets on loss', async () => {
+  const { createSpiderGestureTracker } = await import('../src/gestures.js');
+  const track = createSpiderGestureTracker(), lm = pose();
+  lm[13] = { x: 0.2, y: 0.4, visibility: 1 };
+  lm[15] = { x: 0.04, y: 0.4, visibility: 1 };
+  lm[14] = { x: 0.8, y: 0.4, visibility: 1 };
+  lm[16] = { x: 0.96, y: 0.7, visibility: 1 };
+  expect(track(lm, 0).left).toBe(false);
+  expect(track(lm, 250)).toEqual({ left: true, right: false, screen: false, swing: false });
+  expect(track(lm, 1999).swing).toBe(false);
+  expect(track(lm, 2000).swing).toBe(true);
+  lm[16].y = 0.4;
+  track(lm, 2100);
+  expect(track(lm, 2350).screen).toBe(true);
+  lm[15].visibility = 0;
+  expect(track(lm, 2400)).toEqual({ left: false, right: true, screen: false, swing: false });
+  expect(track(null, 4500)).toEqual({ left: false, right: false, screen: false, swing: false });
+  expect(track(lm, 5000).swing).toBe(false);
+});

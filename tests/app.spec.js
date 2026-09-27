@@ -21,7 +21,7 @@ async function trackingFixture(page) {
 
 const heroes = [
   ['SUPERMAN', ['HEAT VISION', 'FLIGHT']],
-  ['SPIDER-MAN', ['THWIP', 'MASK ON']],
+  ['SPIDER-MAN', ['THWIP', 'LEFT WEB', 'WEB SCREEN', 'SWING', 'MASK ON']],
   ['THOR', ['THUNDER', 'SUMMON HAMMER']],
   ['IRON MAN', ['REPULSOR', 'CHEST BEAM', 'CLOSE HUD']],
   ['WONDER WOMAN', ['LASSO', 'BRACELETS', 'SHIELD', 'AMAZONIAN POWER']],
@@ -131,3 +131,24 @@ for (const [hero, button, wrist] of gestureCases) {
     await expect(power).toHaveAttribute('aria-pressed', 'false');
   });
 }
+
+test('Spider-Man left web, two-hand screen web, and delayed swing', async ({ page }) => {
+  await trackingFixture(page); await page.goto('/');
+  await page.getByRole('button', { name: 'Select SPIDER-MAN', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'LEFT WEB', exact: true })).toBeVisible();
+  await page.evaluate(() => {
+    const lm = Array.from({length: 33}, () => ({x: 0.5, y: 0.7, z: 0, visibility: 1}));
+    for (const [i, x, y] of [[11,0.35,0.4],[12,0.65,0.4],[13,0.2,0.4],[15,0.04,0.4],[14,0.8,0.4],[16,0.96,0.7]]) Object.assign(lm[i], {x,y});
+    window.testPose = lm;
+  });
+  const left = page.getByRole('button', {name: 'LEFT WEB', exact: true});
+  const swing = page.getByRole('button', {name: 'SWING', exact: true});
+  const screen = page.getByRole('button', {name: 'WEB SCREEN', exact: true});
+  await expect(left).toHaveAttribute('aria-pressed', 'true');
+  await expect(screen).toHaveAttribute('aria-pressed', 'false');
+  await expect(swing).toHaveAttribute('aria-pressed', 'true');
+  await page.evaluate(() => { window.testPose[16].y = 0.4; });
+  await expect(screen).toHaveAttribute('aria-pressed', 'true');
+  await page.evaluate(() => { window.testNoPerson = true; });
+  for (const button of [left, screen, swing]) await expect(button).toHaveAttribute('aria-pressed', 'false');
+});

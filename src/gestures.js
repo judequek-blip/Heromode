@@ -2,7 +2,7 @@
 export const GESTURE_HINTS = {
   superman: 'Flight: raise your right hand high above your head. Heat vision: right hand beside your right eye.',
   thor: 'Summon hammer: extend your right arm sideways. Raise it overhead for lightning.',
-  spiderman: 'Web: extend your right arm sideways at shoulder height.',
+  spiderman: 'Extend either arm sideways to shoot. Hold for 2 seconds to swing through the city. Both arms web the screen.',
   ironman: 'Chest beam: hold both hands above your chest. Repulsor: raise your right wrist above your right elbow, beside your shoulder.',
 };
 
@@ -42,5 +42,27 @@ export function createGestureTrigger() {
     const duration = { heatVision: 1500, web: 500, repulsor: 1000, chestBeam: 1800, flight: 4000, hammer: 4000 }[power];
     next = now + duration + 150;
     return { power, duration };
+  };
+}
+
+// Track each arm independently: switching hands cannot inherit a swing hold.
+export function createSpiderGestureTracker() {
+  const started = { left: null, right: null };
+  return (lm, now) => {
+    const visible = i => lm?.[i] && Number.isFinite(lm[i].x) && Number.isFinite(lm[i].y) && lm[i].visibility >= 0.65;
+    const span = visible(11) && visible(12) ? Math.hypot(lm[11].x - lm[12].x, lm[11].y - lm[12].y) : 0;
+    const result = { left: false, right: false, swing: false, screen: false };
+    for (const [side, shoulder, elbow, wrist] of [['left', 11, 13, 15], ['right', 12, 14, 16]]) {
+      const held = span >= 0.08 && [shoulder, elbow, wrist].every(visible) &&
+        Math.abs(lm[wrist].x - lm[shoulder].x) > span * 0.9 &&
+        Math.abs(lm[wrist].y - lm[shoulder].y) < span * 0.45 &&
+        (lm[elbow].x - lm[shoulder].x) * (lm[wrist].x - lm[elbow].x) > 0;
+      if (!held) started[side] = null;
+      else if (started[side] === null) started[side] = now;
+      result[side] = held && now - started[side] >= 250;
+      if (held && now - started[side] >= 2000) result.swing = true;
+    }
+    result.screen = result.left && result.right;
+    return result;
   };
 }

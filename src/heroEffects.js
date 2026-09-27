@@ -101,3 +101,59 @@ export function drawChestBeam(ctx, center, size, width, height, now) {
   ctx.lineWidth = 3; ctx.strokeStyle = '#8af4ff'; ctx.stroke();
   ctx.restore();
 }
+
+export function drawSwingCity(ctx, width, height, now) {
+  ctx.save();
+  const sky = ctx.createLinearGradient(0, 0, 0, height);
+  sky.addColorStop(0, '#152753'); sky.addColorStop(0.65, '#a94e70'); sky.addColorStop(1, '#ffc48a');
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, width, height);
+  // Parallax buildings and a bobbing horizon suggest a pendulum swing.
+  const bob = Math.sin(now * 0.0025) * height * 0.045;
+  for (let layer = 0; layer < 3; layer++) {
+    const spacing = 85 + layer * 30, speed = 0.018 + layer * 0.04;
+    for (let i = -1; i < Math.ceil(width / spacing) + 2; i++) {
+      const x = i * spacing - (now * speed % spacing);
+      const buildingHeight = height * (0.22 + layer * 0.12) + Math.sin(i * 7 + layer) * 35;
+      const y = height - buildingHeight + bob * (layer + 1) / 3;
+      ctx.fillStyle = ['#536080', '#293953', '#101d36'][layer];
+      ctx.fillRect(x, y, spacing - 8, height);
+      ctx.fillStyle = layer === 2 ? '#ffdfa1' : '#95b3d2';
+      for (let wx = 12; wx < spacing - 14; wx += 18) {
+        for (let wy = 15; wy < buildingHeight; wy += 24) ctx.fillRect(x + wx, y + wy, 5, 9);
+      }
+    }
+  }
+  ctx.restore();
+}
+
+export function drawSpiderWebs(ctx, lm, width, height, active, now) {
+  ctx.save(); ctx.strokeStyle = '#eef8ff'; ctx.lineWidth = 2;
+  ctx.shadowBlur = 4; ctx.shadowColor = '#a9caff';
+  for (const [side, index, anchor] of [['left', 15, width * 0.9], ['right', 16, width * 0.1]]) {
+    if (!active[side] || !lm[index] || lm[index].visibility < 0.65) continue;
+    const hand = lm[index];
+    for (let strand = -1; strand <= 1; strand++) {
+      ctx.beginPath(); ctx.moveTo(hand.x + strand * 2, hand.y);
+      ctx.quadraticCurveTo((hand.x + anchor) / 2 + Math.sin(now * 0.006) * (active.swing ? 25 : 5), hand.y * 0.3, anchor + strand * 6, 0);
+      ctx.stroke();
+    }
+  }
+  if (active.screen) {
+    const cx = width / 2, cy = height * 0.46, radius = Math.hypot(width, height) * 0.65;
+    ctx.shadowBlur = 0; ctx.strokeStyle = 'rgba(240,250,255,0.88)'; ctx.lineWidth = 2;
+    for (let i = 0; i < 16; i++) {
+      const angle = i * Math.PI / 8;
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius); ctx.stroke();
+    }
+    for (let ring = 1; ring <= 8; ring++) {
+      const r = ring * radius / 8;
+      ctx.beginPath(); ctx.moveTo(cx + r, cy);
+      for (let i = 1; i <= 16; i++) {
+        const a = i * Math.PI / 8, mid = a - Math.PI / 16;
+        ctx.quadraticCurveTo(cx + Math.cos(mid) * r * 0.91, cy + Math.sin(mid) * r * 0.91, cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+      }
+      ctx.closePath(); ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
