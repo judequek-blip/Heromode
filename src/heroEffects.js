@@ -194,3 +194,39 @@ export function drawDownwardRepulsors(ctx, lm, size, height, now) {
   }
   ctx.restore();
 }
+
+// Shared daytime city park; drawn before the segmented person and costumes.
+export function drawCityBackground(ctx, width, height) {
+  ctx.save(); ctx.scale(width / 640, height / 480);
+  const sky = ctx.createLinearGradient(0, 0, 0, 480);
+  sky.addColorStop(0, '#80bdd8'); sky.addColorStop(0.65, '#e5eff0'); sky.addColorStop(1, '#f8e2be');
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, 640, 480);
+  ctx.fillStyle = '#fff3cf'; ctx.beginPath(); ctx.arc(505, 80, 32, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  for (const [x,y] of [[85,65],[290,100],[570,145]]) {
+    ctx.beginPath(); ctx.ellipse(x,y,55,12,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(x-12,y-8,28,15,0,0,Math.PI*2); ctx.fill();
+  }
+  for (let layer = 0; layer < 2; layer++) {
+    for (let i = 0; i < 11; i++) {
+      const x = i * 65 - 20 + layer * 25;
+      const top = 160 + ((i * 37 + layer * 19) % 85) + layer * 35;
+      ctx.fillStyle = layer ? ['#7c9097','#8f9f9e','#758a94'][i%3] : '#b1c5cc';
+      ctx.fillRect(x,top,52,350-top);
+      ctx.fillStyle = layer ? '#d1e4e8' : '#d7e5e8';
+      for (let row = top+12; row < 335; row += 19) for (let col=x+9; col<x+48; col+=13) ctx.fillRect(col,row,5,9);
+    }
+  }
+  ctx.fillStyle='#739b74'; ctx.fillRect(0,340,640,140);
+  ctx.fillStyle='#d5c7ae'; ctx.beginPath(); ctx.moveTo(290,340); ctx.lineTo(350,340); ctx.lineTo(510,480); ctx.lineTo(130,480); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle='#ece2cf'; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(290,340);ctx.lineTo(130,480);ctx.moveTo(350,340);ctx.lineTo(510,480);ctx.stroke();
+  for (const x of [55,145,505,600]) {
+    ctx.fillStyle='#685443';ctx.fillRect(x-4,295,8,83);
+    ctx.fillStyle=x%2 ? '#497c60':'#558867';
+    ctx.beginPath();ctx.ellipse(x,290,33,43,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='rgba(145,180,113,0.5)';ctx.beginPath();ctx.ellipse(x-10,276,18,24,0,0,Math.PI*2);ctx.fill();
+  }
+  ctx.fillStyle='#644e3b'; ctx.fillRect(60,401,78,7);ctx.fillRect(60,387,78,9);
+  ctx.fillStyle='#34434a';ctx.fillRect(67,408,5,19);ctx.fillRect(126,408,5,19);
+  ctx.restore();
+}

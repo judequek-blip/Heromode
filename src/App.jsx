@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Camera, Zap, Shield, Target, ArrowLeft, Download, Activity, Eye, Hand, Crosshair, Sparkles, Sun, CircleDot, Swords } from 'lucide-react';
 
-import { drawSpiderMask, drawFlightSky, drawHammer, drawChestBeam, drawSwingCity, drawSpiderWebs, drawPowerShockwave, drawDownwardRepulsors } from './heroEffects';
+import { drawSpiderMask, drawFlightSky, drawHammer, drawChestBeam, drawSwingCity, drawSpiderWebs, drawPowerShockwave, drawDownwardRepulsors, drawCityBackground } from './heroEffects';
 import { createGestureTrigger, createSpiderGestureTracker, createThorSequence, GESTURE_HINTS } from './gestures';
 
 // --- CONFIGURATION & CONSTANTS ---
@@ -273,15 +273,9 @@ class Renderer {
     const uCtx = this.userCanvas.getContext('2d');
     const sCtx = this.suitCanvas.getContext('2d');
 
-    // 1. Draw Reality Background
+    // Shared virtual background remains visible when tracking is lost.
     mainCtx.clearRect(0, 0, this.w, this.h);
-    
-    // We flip the video horizontally when drawing to match our math flip
-    mainCtx.save();
-    mainCtx.scale(-1, 1);
-    mainCtx.translate(-this.w, 0);
-    mainCtx.drawImage(videoElement, 0, 0, this.w, this.h);
-    mainCtx.restore();
+    drawCityBackground(mainCtx, this.w, this.h);
 
     if (!landmarksRaw || !maskImg) return;
 

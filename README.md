@@ -13,6 +13,10 @@ npm run dev
 
 Open the localhost address and allow camera access. In PowerShell, use `npm.cmd` if execution policy blocks `npm`. Stand far enough back to show your head, shoulders, elbows, wrists, and hips. Use good lighting. Right and left mean **your own** right and left; the preview is mirrored.
 
+## Virtual background
+
+All five heroes appear in a daytime city park with a skyline, trees, and a walking path. Person segmentation keeps you and your costume in front of the scene. Flight and swinging temporarily use their own sky/city backgrounds. The city park returns when those effects end and remains visible if tracking is lost. Downloaded photos include the virtual background.
+
 ## Gestures and effects
 
 | Hero | Action detected | Visible effect | Button alternative |
