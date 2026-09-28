@@ -20,10 +20,10 @@ async function trackingFixture(page) {
 }
 
 const heroes = [
-  ['SUPERMAN', ['HEAT VISION', 'FLIGHT']],
+  ['SUPERMAN', ['HEAT VISION', 'FLIGHT', 'POWER SHOCKWAVE']],
   ['SPIDER-MAN', ['THWIP', 'LEFT WEB', 'WEB SCREEN', 'SWING', 'MASK ON']],
-  ['THOR', ['THUNDER', 'SUMMON HAMMER']],
-  ['IRON MAN', ['REPULSOR', 'CHEST BEAM', 'CLOSE HUD']],
+  ['THOR', ['THUNDER', 'SUMMON HAMMER', 'EARTHQUAKE']],
+  ['IRON MAN', ['REPULSOR', 'CHEST BEAM', 'REPULSOR FLIGHT', 'CLOSE HUD']],
   ['WONDER WOMAN', ['LASSO', 'BRACELETS', 'SHIELD', 'AMAZONIAN POWER']],
 ];
 
@@ -103,7 +103,9 @@ test('leaving during camera permission request stops a late stream', async ({ pa
 
 const gestureCases = [
   ['IRON MAN', 'CHEST BEAM', { x: 0.72, y: 0.42, both: true }],
-  ['SUPERMAN', 'FLIGHT', { x: 0.65, y: 0.01 }],
+  ['SUPERMAN', 'FLIGHT', { x: 0.65, y: 0.7, leftFlight: true }],
+  ['SUPERMAN', 'POWER SHOCKWAVE', { x: 0.65, y: 0.01 }],
+  ['IRON MAN', 'REPULSOR FLIGHT', { x: 0.65, y: 0.75, ironFlight: true }],
   ['THOR', 'SUMMON HAMMER', { x: 0.95, y: 0.4 }],
   ['SUPERMAN', 'HEAT VISION', { x: 0.59, y: 0.22 }],
   ['SPIDER-MAN', 'THWIP', { x: 0.95, y: 0.4 }],
@@ -123,6 +125,9 @@ for (const [hero, button, wrist] of gestureCases) {
       Object.assign(lm[14], { x: 0.8, y: 0.5 });
       Object.assign(lm[5], { x: 0.56, y: 0.22 });
       Object.assign(lm[16], wrist);
+      Object.assign(lm[0], { x: 0.5, y: 0.22 });
+      if (wrist.leftFlight) Object.assign(lm[15], { x: 0.35, y: 0.01 });
+      if (wrist.ironFlight) { Object.assign(lm[15], { x: 0.35, y: 0.75 }); Object.assign(lm[23], { x: 0.35, y: 0.7 }); Object.assign(lm[24], { x: 0.65, y: 0.7 }); }
       if (wrist.both) Object.assign(lm[15], { x: 0.3, y: 0.42 });
       window.testPose = lm;
     }, wrist);
@@ -151,4 +156,21 @@ test('Spider-Man left web, two-hand screen web, and delayed swing', async ({ pag
   await expect(screen).toHaveAttribute('aria-pressed', 'true');
   await page.evaluate(() => { window.testNoPerson = true; });
   for (const button of [left, screen, swing]) await expect(button).toHaveAttribute('aria-pressed', 'false');
+});
+
+test('Thor lowering a charged lightning hand triggers an earthquake once', async ({ page }) => {
+  await trackingFixture(page); await page.goto('/');
+  await page.getByRole('button', {name: 'Select THOR', exact: true}).click();
+  const quake = page.getByRole('button', {name: 'EARTHQUAKE', exact: true});
+  await expect(quake).toBeVisible();
+  await page.evaluate(() => {
+    const lm = Array.from({length: 33}, () => ({x: 0.5, y: 0.7, z: 0, visibility: 1}));
+    Object.assign(lm[0], {y: 0.3}); Object.assign(lm[11], {x: 0.35, y: 0.4}); Object.assign(lm[12], {x: 0.65, y: 0.4});
+    Object.assign(lm[16], {x: 0.65, y: 0.01}); window.testPose = lm;
+  });
+  // The sequence intentionally needs a real stable hold across tracking frames.
+  await page.waitForTimeout(600);
+  await page.evaluate(() => { window.testPose[16].y = 0.8; });
+  await expect(quake).toHaveAttribute('aria-pressed', 'true');
+  await expect(quake).toHaveAttribute('aria-pressed', 'false');
 });

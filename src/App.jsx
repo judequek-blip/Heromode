@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Camera, Zap, Shield, Target, ArrowLeft, Download, Activity, Eye, Hand, Crosshair, Sparkles, Sun, CircleDot, Swords } from 'lucide-react';
 
-import { drawSpiderMask, drawFlightSky, drawHammer, drawChestBeam, drawSwingCity, drawSpiderWebs } from './heroEffects';
-import { createGestureTrigger, createSpiderGestureTracker, GESTURE_HINTS } from './gestures';
+import { drawSpiderMask, drawFlightSky, drawHammer, drawChestBeam, drawSwingCity, drawSpiderWebs, drawPowerShockwave, drawDownwardRepulsors } from './heroEffects';
+import { createGestureTrigger, createSpiderGestureTracker, createThorSequence, GESTURE_HINTS } from './gestures';
 
 // --- CONFIGURATION & CONSTANTS ---
 const HEROES = {
@@ -294,7 +294,7 @@ class Renderer {
     // Parse specific hero geometry
     this.parseHeroGeometry(lm, heroConfig.id, state);
 
-    if (heroConfig.id === 'superman' && state.powers.flight) {
+    if ((heroConfig.id === 'superman' && state.powers.flight) || (heroConfig.id === 'ironman' && state.powers.ironFlight)) {
       drawFlightSky(mainCtx, this.w, this.h, performance.now());
     }
 
@@ -373,6 +373,10 @@ class Renderer {
     fgBulky.sort((a, b) => b.z - a.z);
     fgBulky.forEach(q => this.drawPolygon(mainCtx, q.points, q.type, q.color, q.accentColor));
 
+    if (heroConfig.id === 'thor' && state.powers.earthquake) {
+      const shake = Math.sin(performance.now() * 0.065) * 5;
+      mainCtx.drawImage(this.canvas, shake, Math.cos(performance.now() * 0.08) * 3);
+    }
     // 8. Render Glowing Effects (Top Layer)
     this.effectsQueue.forEach(effect => effect(mainCtx));
   }
@@ -448,6 +452,9 @@ class Renderer {
       ];
       this.queueSegment(this.bulkyQueue, shield, 'metal', '#ee1111', '#ffee00');
 
+      if (state.powers.superShockwave) {
+        this.effectsQueue.push(ctx => drawPowerShockwave(ctx, midPoint(lm[11], lm[12]), sDist, this.w, this.h, performance.now()));
+      }
       if (state.powers.heatVision && lm[2] && lm[5]) {
          this.effectsQueue.push((ctx) => {
             ctx.strokeStyle = 'rgba(255,50,0,0.8)'; ctx.lineWidth = 10;
@@ -497,11 +504,14 @@ class Renderer {
          });
       }
 
-      if (state.powers.chestBeam) {
+      if (state.powers.ironFlight) {
+        this.effectsQueue.push(ctx => drawDownwardRepulsors(ctx, lm, sDist, this.h, performance.now()));
+      }
+      if (state.powers.chestBeam && !state.powers.ironFlight) {
         this.effectsQueue.push(ctx => drawChestBeam(ctx, { x: cX, y: cY }, sDist, this.w, this.h, performance.now()));
       }
 
-      if (state.powers.repulsor && !state.powers.chestBeam) {
+      if (state.powers.repulsor && !state.powers.chestBeam && !state.powers.ironFlight) {
          this.effectsQueue.push((ctx) => {
             this.drawGlow(ctx, lm[16], 40 + Math.random()*20, '#00ffff', '#fff');
             ctx.beginPath(); ctx.moveTo(lm[16].x, lm[16].y); ctx.lineTo(lm[16].x, 0);
@@ -543,6 +553,9 @@ class Renderer {
          });
       });
 
+      if (state.powers.earthquake) {
+        this.effectsQueue.push(ctx => drawPowerShockwave(ctx, { x: (lm[23].x + lm[24].x) / 2, y: this.h * 0.8 }, sDist, this.w, this.h, performance.now(), true));
+      }
       if (state.powers.hammer || state.powers.lightning) {
         this.effectsQueue.push(ctx => drawHammer(ctx, lm, sDist, performance.now()));
       }
@@ -823,6 +836,7 @@ const ARScreen = ({ heroId, onBack }) => {
     let frame;
     let inFlight;
     const detectGesture = createGestureTrigger();
+    const trackThor = createThorSequence();
     const trackSpider = createSpiderGestureTracker();
     const video = videoRef.current;
     const stop = () => {
@@ -861,6 +875,7 @@ const ARScreen = ({ heroId, onBack }) => {
         pose.onResults((results) => {
           if (cancelled || !canvasRef.current || !rendererRef.current) return;
           setIsReady(true);
+          if (heroId === 'thor' && trackThor(results.segmentationMask ? results.poseLandmarks : null, performance.now())) triggerPower('earthquake', 1800);
           if (heroId === 'spiderman') {
             const spiderGesture = trackSpider(results.segmentationMask ? results.poseLandmarks : null, performance.now());
             setPowerState(prev => Object.keys(spiderGesture).every(key => prev.spiderGesture?.[key] === spiderGesture[key])
@@ -1066,6 +1081,7 @@ const ARScreen = ({ heroId, onBack }) => {
                     <Eye className="w-8 h-8 mb-2 text-red-500 drop-shadow-[0_0_8px_rgba(255,0,0,0.8)]" />
                     <span className="text-xs font-bold font-mono">HEAT VISION</span>
                   </button>
+                  <button aria-pressed={!!powerState.powers.superShockwave} onClick={() => triggerPower('superShockwave', 1400)} className="flex flex-col items-center px-4 py-2 rounded-xl hover:bg-blue-500/20 text-white"><Zap className="w-8 h-8 mb-2" /><span className="text-xs font-bold font-mono">POWER SHOCKWAVE</span></button>
                   <button aria-pressed={!!powerState.powers.flight} onClick={() => triggerPower('flight', 4000)} className="flex flex-col items-center px-4 py-2 rounded-xl hover:bg-blue-500/20 text-white transition-colors">
                     <ArrowLeft className="w-8 h-8 mb-2 rotate-90 text-blue-300" />
                     <span className="text-xs font-bold font-mono">FLIGHT</span>
@@ -1079,7 +1095,8 @@ const ARScreen = ({ heroId, onBack }) => {
                       <Hand className="w-8 h-8 mb-2 text-cyan-400 drop-shadow-[0_0_8px_rgba(0,255,255,0.8)]" />
                       <span className="text-xs font-bold font-mono">REPULSOR</span>
                     </button>
-                    <button aria-pressed={!!powerState.powers.chestBeam} onClick={() => triggerPower('chestBeam', 1800)} className="flex flex-col items-center px-4 py-2 rounded-xl hover:bg-cyan-500/20 text-white transition-colors">
+                    <button aria-pressed={!!powerState.powers.ironFlight} onClick={() => triggerPower('ironFlight', 3000)} className="flex flex-col items-center px-4 py-2 rounded-xl hover:bg-blue-500/20 text-white"><Zap className="w-8 h-8 mb-2" /><span className="text-xs font-bold font-mono">REPULSOR FLIGHT</span></button>
+                  <button aria-pressed={!!powerState.powers.chestBeam} onClick={() => triggerPower('chestBeam', 1800)} className="flex flex-col items-center px-4 py-2 rounded-xl hover:bg-cyan-500/20 text-white transition-colors">
                       <CircleDot className="w-8 h-8 mb-2 text-cyan-200" />
                       <span className="text-xs font-bold font-mono">CHEST BEAM</span>
                     </button>
@@ -1096,6 +1113,7 @@ const ARScreen = ({ heroId, onBack }) => {
                     <Zap className="w-8 h-8 mb-2 text-blue-300 fill-blue-300 drop-shadow-[0_0_10px_rgba(0,100,255,0.8)]" />
                     <span className="text-xs font-bold font-mono">THUNDER</span>
                   </button>
+                  <button aria-pressed={!!powerState.powers.earthquake} onClick={() => triggerPower('earthquake', 1800)} className="flex flex-col items-center px-4 py-2 rounded-xl hover:bg-blue-500/20 text-white"><Zap className="w-8 h-8 mb-2" /><span className="text-xs font-bold font-mono">EARTHQUAKE</span></button>
                   <button aria-pressed={!!powerState.powers.hammer} onClick={() => triggerPower('hammer', 4000)} className="flex flex-col items-center px-4 py-2 rounded-xl hover:bg-blue-500/20 text-white transition-colors">
                     <Zap className="w-8 h-8 mb-2 text-blue-200" />
                     <span className="text-xs font-bold font-mono">SUMMON HAMMER</span>

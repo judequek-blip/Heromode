@@ -157,3 +157,40 @@ export function drawSpiderWebs(ctx, lm, width, height, active, now) {
   }
   ctx.restore();
 }
+
+export function drawPowerShockwave(ctx, center, size, width, height, now, earthquake = false) {
+  ctx.save();
+  const phase = (now % 1400) / 1400;
+  ctx.strokeStyle = earthquake ? '#ffd89a' : '#b8efff'; ctx.shadowColor = ctx.strokeStyle; ctx.shadowBlur = 18;
+  for (let i = 0; i < 3; i++) {
+    const p = (phase + i / 3) % 1, r = size * 0.2 + p * width * 0.9;
+    ctx.globalAlpha = 1 - p; ctx.lineWidth = 7 * (1 - p) + 1;
+    ctx.beginPath(); ctx.ellipse(center.x, center.y, r, earthquake ? r * 0.22 : r, 0, 0, Math.PI * 2); ctx.stroke();
+  }
+  if (earthquake) {
+    ctx.globalAlpha = 0.85; ctx.lineWidth = 3;
+    for (let i = 0; i < 9; i++) {
+      ctx.beginPath(); ctx.moveTo(center.x, center.y);
+      const x = width * i / 8;
+      ctx.lineTo((center.x + x) / 2 + 15, center.y + 25);
+      ctx.lineTo((center.x + x) / 2 - 12, center.y + 45);
+      ctx.lineTo(x, height); ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+export function drawDownwardRepulsors(ctx, lm, size, height, now) {
+  ctx.save();
+  for (const i of [15, 16]) {
+    if (!lm[i] || lm[i].visibility < 0.65) continue;
+    const { x, y } = lm[i], radius = size * (0.07 + Math.sin(now * 0.03) * 0.01);
+    const glow = ctx.createLinearGradient(x, y, x, height);
+    glow.addColorStop(0, '#efffff'); glow.addColorStop(0.25, '#6ceaff'); glow.addColorStop(1, 'rgba(0,160,255,0)');
+    ctx.fillStyle = glow; ctx.shadowColor = '#53dfff'; ctx.shadowBlur = 18;
+    ctx.beginPath(); ctx.moveTo(x - radius, y); ctx.lineTo(x - radius * 3, height);
+    ctx.lineTo(x + radius * 3, height); ctx.lineTo(x + radius, y); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.fillStyle = '#fff'; ctx.fill();
+  }
+  ctx.restore();
+}

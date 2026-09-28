@@ -3,6 +3,7 @@ import { detectPower, createGestureTrigger } from '../src/gestures.js';
 
 function pose() {
   const lm = Array.from({ length: 33 }, () => ({ x: 0.5, y: 0.7, visibility: 1 }));
+  lm[0] = { x: 0.5, y: 0.22, visibility: 1 };
   lm[11] = { x: 0.35, y: 0.4, visibility: 1 };
   lm[12] = { x: 0.65, y: 0.4, visibility: 1 };
   lm[5] = { x: 0.56, y: 0.22, visibility: 1 };
@@ -36,7 +37,7 @@ test('stable hold, cooldown, and tracking-loss reset prevent accidental bursts',
 test('flight and hammer gestures stay hero-specific and need visible landmarks', () => {
   const lm = pose();
   lm[16] = { x: 0.65, y: 0.01, visibility: 1 };
-  expect(detectPower('superman', lm)).toBe('flight');
+  expect(detectPower('superman', lm)).toBe('superShockwave');
   expect(detectPower('spiderman', lm)).toBeNull();
   lm[14] = { x: 0.8, y: 0.4, visibility: 1 };
   lm[16] = { x: 0.96, y: 0.4, visibility: 1 };
@@ -81,4 +82,29 @@ test('Spider-Man tracks both arms, requires a continuous two-second hold, and re
   expect(track(lm, 2400)).toEqual({ left: false, right: true, screen: false, swing: false });
   expect(track(null, 4500)).toEqual({ left: false, right: false, screen: false, swing: false });
   expect(track(lm, 5000).swing).toBe(false);
+});
+
+test('Superman left flight is independent of right wrist visibility; Iron Man needs both lowered hands', () => {
+  const lm = pose(); lm[0] = { x: 0.5, y: 0.25, visibility: 1 };
+  lm[15] = { x: 0.35, y: 0.01, visibility: 1 }; lm[16].visibility = 0;
+  expect(detectPower('superman', lm)).toBe('flight');
+  lm[15].visibility = 0;
+  expect(detectPower('superman', lm)).toBeNull();
+  lm[15] = { x: 0.35, y: 0.8, visibility: 1 }; lm[16] = { x: 0.65, y: 0.8, visibility: 1 };
+  lm[23] = { x: 0.35, y: 0.7, visibility: 1 }; lm[24] = { x: 0.65, y: 0.7, visibility: 1 };
+  expect(detectPower('ironman', lm)).toBe('ironFlight');
+  lm[15].y = 0.4;
+  expect(detectPower('ironman', lm)).not.toBe('ironFlight');
+});
+
+test('Thor earthquake needs raise then lower, fires once, and resets on tracking loss', async () => {
+  const { createThorSequence } = await import('../src/gestures.js');
+  const track = createThorSequence(), lm = pose();
+  lm[0] = { x: 0.5, y: 0.3, visibility: 1 }; lm[16].y = 0.8;
+  expect(track(lm, 0)).toBe(false);
+  lm[16].y = 0.01; track(lm, 100); expect(track(lm, 350)).toBe(false);
+  lm[16].y = 0.8; expect(track(lm, 400)).toBe(false); expect(track(lm, 550)).toBe(true);
+  expect(track(lm, 800)).toBe(false);
+  lm[16].y = 0.01; track(lm, 900); track(lm, 1200); track(null, 1300);
+  lm[16].y = 0.8; track(lm, 1400); expect(track(lm, 1700)).toBe(false);
 });

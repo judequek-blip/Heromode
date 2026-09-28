@@ -60,3 +60,20 @@ test('Spider-Man city and screen web render visibly', async ({ page }) => {
   expect(changes).toBeGreaterThan(10000);
   await page.screenshot({path: 'test-results/spider-city.png'});
 });
+
+test('shockwave, earthquake, and downward jets paint visible pixels', async ({ page }) => {
+  await page.goto('/');
+  const counts = await page.evaluate(async () => {
+    const { drawPowerShockwave, drawDownwardRepulsors } = await import('/src/heroEffects.js');
+    const c = document.createElement('canvas'); c.width = 640; c.height = 480;
+    const ctx = c.getContext('2d');
+    const count = () => { const p = ctx.getImageData(0,0,640,480).data; let n=0; for(let i=3;i<p.length;i+=4) if(p[i]) n++; return n; };
+    drawPowerShockwave(ctx, {x:320,y:240}, 150,640,480,500); const shock = count(); ctx.clearRect(0,0,640,480);
+    drawPowerShockwave(ctx, {x:320,y:380},150,640,480,500,true); const quake=count(); ctx.clearRect(0,0,640,480);
+    const lm=Array.from({length:33},()=>({x:200,y:280,visibility:1})); lm[16].x=440;
+    drawDownwardRepulsors(ctx,lm,150,480,500);
+    return [shock,quake,count(),ctx.getImageData(200,400,1,1).data[3],ctx.getImageData(440,400,1,1).data[3]];
+  });
+  for(const count of counts.slice(0,3)) expect(count).toBeGreaterThan(1000);
+  for(const alpha of counts.slice(3)) expect(alpha).toBeGreaterThan(0);
+});
